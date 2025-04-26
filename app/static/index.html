@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document Q&A Demo</title>
+
+    <style>
+      /* ------------- global layout ---------------- */
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0 auto;
+        max-width: 800px;
+        padding: 1rem;
+        line-height: 1.5;
+      }
+      .logo {
+        display: block;
+        margin: 0 auto 1rem;
+        height: 60px;
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 2rem;
+      }
+      section {
+        margin-bottom: 3rem;
+      }
+
+      /* ------------- chat window ------------------ */
+      #chatWindow {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 1rem;
+        height: 420px;
+        overflow-y: auto;
+        background: #fafafa;
+      }
+      .msg {
+        margin-bottom: 1rem;
+        display: flex;
+        flex-direction: column;
+      }
+      .msg.user {
+        align-items: flex-end;
+      }
+      .bubble {
+        padding: 0.6rem 0.9rem;
+        border-radius: 12px;
+        max-width: 70%;
+        white-space: pre-wrap;          /* keeps \n line-breaks */
+      }
+      .user .bubble {
+        background: #007bff;
+        color: #fff;
+      }
+      .bot .bubble {
+        background: #e2e8f0;
+      }
+      .chunks-container {
+        margin-top: 0.4rem;
+        max-width: 70%;
+      }
+      details.chunks {
+        background: #f6f8fa;
+        padding: 0.4rem 0.6rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+      }
+      details.chunks > summary {
+        cursor: pointer;
+        font-weight: 600;
+      }
+      pre.chunk {
+        white-space: pre-wrap;
+        word-break: break-word;
+        margin: 0.4rem 0;
+      }
+      form.inline {
+        display: flex;
+        gap: 0.5rem;
+      }
+      input[type="text"] {
+        flex: 1;
+        padding: 0.6rem;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+      }
+      button {
+        padding: 0.6rem 1rem;
+        border: none;
+        border-radius: 6px;
+        background: #007bff;
+        color: #fff;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* ------------- upload UI extras ------------- */
+      .step {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .dropzone {
+        border: 2px dashed #c0c4cc;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 1rem;
+
+        /* ✨ NEW → center the icon + text */
+        display: flex;              /* enable flex layout   */
+        flex-direction: column;      /* stack icon over text */
+        align-items: center;         /* center horizontally */
+        justify-content: center;     /* center vertically   */
+        gap: .5rem;                  /* space between them  */
+
+        text-align: center;
+        color: #6b7280;
+        cursor: pointer;
+        transition: border-color .2s, background .2s;
+      }
+      .dropzone.dragover {
+        background: #f0f8ff;
+        border-color: #007bff;
+      }
+      .dropzone svg {
+        opacity: 0.6;
+        margin-bottom: 0.5rem;
+      }
+
+      .file-list {
+        list-style: none;
+        margin: 1rem 0 0;
+        padding: 0;
+      }
+      .file-list li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.3rem 0.6rem;
+        border-radius: 6px;
+        background: #f8f9fa;
+        margin-bottom: 0.3rem;
+        font-size: 0.9rem;
+      }
+
+      .progress {
+        height: 8px;
+        background: #e5e7eb;
+        border-radius: 4px;
+        margin-top: 0.8rem;
+        overflow: hidden;
+      }
+      .progress .bar {
+        height: 100%;
+        width: 0%;
+        background: #007bff;
+        transition: width 0.3s;
+      }
+
+      .actions {
+        margin-top: 1rem;
+        display: flex;
+        gap: 0.5rem;
+      }
+      .actions button[type="button"] {
+        flex: 1;
+      }
+
+      pre#uploadResult {
+        overflow-x: auto;
+        margin-top: 1rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <img src="/static/tractian_logo.svg" alt="Tractian" class="logo" />
+    <h1>📄🔎&nbsp;Document Q&A</h1>
+
+    <!-- ========== 1. Upload PDFs ========== -->
+    <section id="upload">
+      <h2 class="step">① Upload PDFs</h2>
+
+      <!-- drag-and-drop area -->
+      <div id="dropzone" class="dropzone">
+        <svg aria-hidden="true" width="40" height="40" viewBox="0 0 24 24">
+          <path
+            d="M12 5v14m7-7H5"
+            stroke="currentColor"
+            stroke-width="2"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <span class="dz-text">Click or drag files here</span>
+      </div>
+
+      <!-- hidden file input -->
+      <input
+        id="fileInput"
+        type="file"
+        name="files"
+        accept="application/pdf"
+        multiple
+        hidden
+      />
+
+      <!-- file list + progress bar -->
+      <ul id="fileList" class="file-list"></ul>
+      <div id="progressBar" class="progress" hidden>
+        <div class="bar"></div>
+      </div>
+
+      <!-- buttons -->
+      <div class="actions">
+        <button id="uploadBtn" type="button" disabled>Upload</button>
+        <button id="clearBtn" type="button" hidden>Clear</button>
+      </div>
+
+      <pre id="uploadResult"></pre>
+    </section>
+
+    <!-- ========== 2. Ask questions ========== -->
+    <section id="chat">
+      <h2>② Ask Questions</h2>
+      <div id="chatWindow"></div>
+      <form id="chatForm" class="inline">
+        <input
+          id="questionInput"
+          type="text"
+          placeholder="Type your question..."
+          autocomplete="off"
+          required
+        />
+        <button type="submit">Send</button>
+      </form>
+    </section>
+
+    <script>
+      /* ---------------- File upload logic ---------------- */
+      const dropzone = document.getElementById("dropzone");
+      const fileInput = document.getElementById("fileInput");
+      const fileListUI = document.getElementById("fileList");
+      const uploadBtn = document.getElementById("uploadBtn");
+      const clearBtn = document.getElementById("clearBtn");
+      const progressBar = document.querySelector("#progressBar .bar");
+      const progressBox = document.getElementById("progressBar");
+      const uploadResult = document.getElementById("uploadResult");
+
+      const bytes = (n) => `${(n / 1024 / 1024).toFixed(2)} MB`;
+
+      const resetUI = () => {
+        fileListUI.innerHTML = "";
+        progressBar.style.width = "0%";
+        progressBox.hidden = true;
+        uploadBtn.disabled = true;
+        clearBtn.hidden = true;
+        uploadResult.textContent = "";
+      };
+
+      const refreshFileList = (files) => {
+        fileListUI.innerHTML = "";
+        [...files].forEach((f) => {
+          const li = document.createElement("li");
+          li.textContent = `${f.name} — ${bytes(f.size)}`;
+          fileListUI.appendChild(li);
+        });
+        uploadBtn.disabled = !files.length;
+        clearBtn.hidden = !files.length;
+      };
+
+      /* drag-and-drop behaviour */
+      ["dragenter", "dragover"].forEach((evt) =>
+        dropzone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.add("dragover");
+        })
+      );
+      ["dragleave", "drop"].forEach((evt) =>
+        dropzone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.remove("dragover");
+        })
+      );
+      dropzone.addEventListener("drop", (e) => {
+        fileInput.files = e.dataTransfer.files;
+        refreshFileList(fileInput.files);
+      });
+
+      /* click-to-browse */
+      dropzone.addEventListener("click", () => fileInput.click());
+      fileInput.addEventListener("change", () => refreshFileList(fileInput.files));
+
+      /* clear */
+      clearBtn.addEventListener("click", () => {
+        fileInput.value = "";
+        resetUI();
+      });
+
+      /* upload */
+      uploadBtn.addEventListener("click", async () => {
+        const formData = new FormData();
+        [...fileInput.files].forEach((f) => formData.append("files", f));
+
+        progressBox.hidden = false;
+        progressBar.style.width = "0%";
+        uploadBtn.disabled = true;
+
+        try {
+          // simple fake progress; swap for XHR upload events if you wish
+          let pct = 0;
+          const tick = setInterval(() => {
+            pct = Math.min(pct + 10, 95);
+            progressBar.style.width = pct + "%";
+          }, 150);
+
+          const res = await fetch("/documents", { method: "POST", body: formData });
+          clearInterval(tick);
+          progressBar.style.width = "100%";
+
+          uploadResult.textContent = JSON.stringify(await res.json(), null, 2);
+        } catch (err) {
+          uploadResult.textContent = `❌ Error: ${err}`;
+        } finally {
+          uploadBtn.disabled = false;
+        }
+      });
+
+      /* ---------------- Chat / question logic -------------- */
+      const chatForm = document.getElementById("chatForm");
+      const questionInput = document.getElementById("questionInput");
+      const chatWindow = document.getElementById("chatWindow");
+
+      function addMessage(sender, text) {
+        const wrapper = document.createElement("div");
+        wrapper.className = `msg ${sender}`;
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.textContent = text;
+        wrapper.appendChild(bubble);
+        chatWindow.appendChild(wrapper);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+        return { wrapper, bubble };
+      }
+
+      function extractChunkObjects(data) {
+        let list = [];
+        if (Array.isArray(data.sources)) list = data.sources;
+        else if (Array.isArray(data.chunks)) list = data.chunks;
+        else if (Array.isArray(data.retrieved_chunks)) list = data.retrieved_chunks;
+        else if (Array.isArray(data.contexts)) list = data.contexts;
+
+        return list.map((item, idx) => {
+          if (typeof item === "string") return { header: `Chunk ${idx + 1}`, body: item };
+          const parts = [];
+          if (item.filename) parts.push(item.filename);
+          if (item.page_index !== undefined) parts.push(`page ${item.page_index}`);
+          if (item.chunk_index !== undefined) parts.push(`chunk ${item.chunk_index}`);
+          if (item.score !== undefined) parts.push(`score ${item.score.toFixed(2)}`);
+          const header = parts.length ? parts.join(" | ") : `Chunk ${idx + 1}`;
+          const body = item.text || item.content || item.chunk || JSON.stringify(item);
+          return { header, body };
+        });
+      }
+
+      function insertChunks(afterWrapper, chunkObjs) {
+        if (!chunkObjs.length) return;
+        const container = document.createElement("div");
+        container.className = "chunks-container";
+        const details = document.createElement("details");
+        details.className = "chunks";
+        const summary = document.createElement("summary");
+        summary.textContent = `📑 Retrieved Chunks (${chunkObjs.length})`;
+        details.appendChild(summary);
+        chunkObjs.forEach(({ header, body }) => {
+          const pre = document.createElement("pre");
+          pre.className = "chunk";
+          pre.innerHTML = `<strong>${header}</strong>\n${body}`;
+          details.appendChild(pre);
+        });
+        container.appendChild(details);
+        afterWrapper.appendChild(container);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+      }
+
+      chatForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const q = questionInput.value.trim();
+        if (!q) return;
+        addMessage("user", q);
+        questionInput.value = "";
+        const { wrapper: botWrapper, bubble: placeholder } = addMessage("bot", "⏳ Thinking…");
+
+        try {
+          const res = await fetch("/question", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question: q }),
+          });
+          const data = await res.json();
+          placeholder.textContent = data.answer || "(no answer field)";
+          const chunkObjs = extractChunkObjects(data);
+          insertChunks(botWrapper, chunkObjs);
+        } catch (err) {
+          placeholder.textContent = `❌ Error: ${err}`;
+        }
+      });
+    </script>
+  </body>
+</html>

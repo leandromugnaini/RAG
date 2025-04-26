@@ -1,0 +1,5 @@
+datasets==3.5.0
+tqdm==4.67.1
+requests==2.32.3
+ragas==0.2.5
+nltk==3.9.1
