@@ -33,7 +33,7 @@ project-root/
 │   │   └── config.py           #  pydantic BaseSettings using `.env`
 │   ├── schemas/                # Pydantic request/response models
 │   └── static/                 # Simple HTML landing page
-│       ├── tractian_logo.svg   # Tractian logo
+│       ├── tractian_logo.svg   #  Tractian logo
 │       └── index.html          #  Basic static html page for interaction
 ├── data/                       # Data folder
 │   ├── uploads/                #  Copies of every PDF received
