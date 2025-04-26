@@ -1,5 +1,7 @@
 from datasets import load_dataset, Dataset
+from dotenv import load_dotenv
 from tqdm import tqdm
+import os
 import requests
 import json
 
@@ -9,6 +11,15 @@ from ragas.metrics import (
     faithfulness,
     answer_relevancy
 )
+
+
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
+
+_OPENAI_KEY = os.getenv("OPENAI_API_KEY")
+if not _OPENAI_KEY:
+    raise RuntimeError("Missing OpenAI API key – set OPENAI_API_KEY in your .env file")
+
+os.environ["OPENAI_API_KEY"] = _OPENAI_KEY
 
 
 def main():
@@ -53,7 +64,7 @@ def main():
     print(report)
 
     df = report.to_pandas()
-    df.to_csv("ragas_scores.csv", index=False)
+    df.to_csv("eval/ragas_scores.csv", index=False)
 
     print("✅  Results saved to ragas_scores.csv")
     print(df)

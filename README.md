@@ -223,7 +223,7 @@ The table below compiles the score of each metric for our system. As we can see,
 | `answer_relevancy`    | **0.9677** | Indicates how directly the answer responds to the input question. Lower values imply the answer might be off-topic or verbose.            |
 
 
-If you want to run the evaluation by yourself, make sure to install the necessary requirements from the file ```requirements_eval.txt```, turn on the app (```python -m app.main```) and run the ```evaluate_rag.py``` script. A more detailed output, comparing the ground truth with the generated answer is available at the ```ragas_scores.csv```.
+If you want to run the evaluation by yourself, make sure to install the necessary requirements from the file ```requirements_eval.txt```, turn on the app (```python -m app.main```) and run ```python eval/evaluate_rag.py```. A more detailed output, comparing the ground truth with the generated answer is available at the ```ragas_scores.csv```.
 
 
 ### Improvements
