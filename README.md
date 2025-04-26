@@ -67,8 +67,8 @@ project-root/
 ### 2. Clone & install
 
 ```bash
-git clone https://github.com/<you>/RAG-main.git
-cd RAG-main
+git clone git@github.com:leandromugnaini/RAG.git
+cd RAG
 
 # Create and activate an isolated env
 python -m venv .venv
